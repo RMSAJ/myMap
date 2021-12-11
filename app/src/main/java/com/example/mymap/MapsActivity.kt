@@ -1,22 +1,34 @@
 package com.example.mymap
 
+import android.content.res.Resources
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.core.content.ContextCompat
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.example.mymap.databinding.ActivityMapsBinding
+import com.google.android.gms.maps.model.*
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
+    private val latitude = 24.835411021391803
+    private val longitude = 46.718609606634686
+    val homeLatLng = LatLng(latitude, longitude)
+    val zoomLevel = 15f
+
+
+
     private lateinit var map: GoogleMap
     private lateinit var binding: ActivityMapsBinding
+
+    private val TAG = MapsActivity::class.java.simpleName
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,9 +65,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             true
         }
         else -> super.onOptionsItemSelected(item)
-
     }
-
 
     /**
      * Manipulates the map once available.
@@ -67,11 +77,50 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * installed Google Play services and returned to the app.
      */
     override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
 
-        // Add a marker in Sydney and move the camera
-        val sydney = LatLng(-34.0, 151.0)
-        map.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        map.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        map = googleMap
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, zoomLevel))
+        val overlaySize = 100f
+        val androidOverlay = GroundOverlayOptions()
+                // here is the issue -> JANA ^_^
+            .image(BitmapDescriptor (R.drawable.ic_baseline_directions_bus_24))
+            .position(homeLatLng, overlaySize)
+        map.addMarker(MarkerOptions().position(homeLatLng))
+        map.addGroundOverlay(androidOverlay)
+        setMapStyle(map)
+        // adding overLay drawble
+//        val androidOverlay = GroundOverlayOptions()
+//            .image(BitmapDescriptorFactory.fromResource(R.drawable.ic_baseline_directions_bus_24))
+//            .position(homeLatLng, overlaySize)
+//        map.addGroundOverlay(androidOverlay)
     }
+
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            // A snippet is additional text that's displayed after the title.
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat: %1$.5f, Long: %2$.5f",
+                latLng.latitude,
+                latLng.longitude)
+        }
+    }
+    private fun setMapStyle(map: GoogleMap) {
+        try {
+            // Customize the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            val success = map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    this,
+                    R.raw.map_style
+                )
+            )
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e(TAG, "Can't find style. Error: ", e)
+        }
+    }
+
 }
